@@ -1,5 +1,7 @@
 import type { Book, Movie } from "./types";
 import * as A from "fp-ts/Array";
+import * as S from "fp-ts/Set";
+import * as N from "fp-ts/number";
 import { pipe } from "fp-ts/function";
 
 /**
@@ -92,3 +94,83 @@ const recomendationFeedWithMonad = (books: Array<Book>): void => {
 };
 
 recomendationFeedWithMonad(books);
+
+// 円の中に点はあるか？
+const points: Array<Point> = [
+	{ x: 5, y: 2 },
+	{ x: 1, y: 1 },
+];
+const radiuses: Array<number> = [2, 1];
+
+const isInside = (point: Point, radius: number): boolean => {
+	return radius ** 2 >= point.x ** 2 + point.y ** 2;
+};
+
+// filter
+console.log(
+	pipe(
+		A.Do,
+		A.bind("r", () => radiuses.filter((r) => r > 0)),
+		// fileterを使って、条件に合致するものだけを取り出す
+		A.bind("point", ({ r }) => points.filter((p) => isInside(p, r))),
+		A.map(
+			({ r, point }) =>
+				`Point(${point.x}, ${point.y}) is whithin a radius of ${r}`,
+		),
+	),
+);
+
+/**
+ * Pointが円の中にあるかどうかを判定する
+ * @param point 点
+ * @param radius 半径
+ */
+const insideFilter = (point: Point, radius: number): Array<Point> => {
+	return isInside(point, radius) ? [point] : [];
+};
+
+/**
+ * 半径のバリデーション
+ * @param radius 半径
+ */
+const validateRadius = (radius: number): Array<number> => {
+	return radius > 0 ? [radius] : [];
+};
+
+console.log(
+	pipe(
+		A.Do,
+		A.bind("r", () => radiuses),
+		A.bind("validRadius", ({ r }) => validateRadius(r)),
+		// filterを使って、条件に合致するものだけを取り出す
+		A.bind("point", () => points),
+		A.bind("inPoint", ({ point, validRadius }) =>
+			insideFilter(point, validRadius),
+		),
+		A.map(
+			({ validRadius, inPoint }) =>
+				`Point(${inPoint.x}, ${inPoint.y}) is whithin a radius of ${validRadius}`,
+		),
+	),
+);
+
+console.log(
+	pipe(
+		A.Do,
+		A.bind("a", () => [1, 2]),
+		A.bind("b", () => [1, 2]),
+		A.map(({ a, b }) => a * b),
+	),
+);
+
+// Setを使って重複を排除する
+console.log(
+	new Set(
+		pipe(
+			A.Do,
+			A.bind("a", () => [1, 2]),
+			A.bind("b", () => [2, 1]),
+			A.map(({ a, b }) => a * b),
+		),
+	),
+);
